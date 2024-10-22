@@ -1,26 +1,27 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app">
+    <div id="map" class="map"></div>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
+/* global kakao */
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
+  mounted() {
+    var mapContainer = document.getElementById('map');
+    var mapOption = {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 3
+    };
+    
+    new kakao.maps.Map(mapContainer, mapOption); // 변수를 사용하지 않고 지도 생성
   }
-}
+};
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+<style scoped>
+.map {
+  width: 40vw;  /* 뷰포트의 전체 너비 */
+  height: 80vh; /* 뷰포트의 전체 높이 */
 }
 </style>
