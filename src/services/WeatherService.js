@@ -52,9 +52,23 @@ export const getWeatherData = async (latitude, longitude) => {
     nextHour.setHours(nextHour.getHours() + 1); // 한 시간 뒤로 설정
     const nextHourTime = ("0" + nextHour.getHours()).slice(-2) + "00"; // HH00 형식으로 변환
 
-    const oneHourRainInfo = weatherItems.find(
-      (item) => item.fcstTime === nextHourTime
+    let oneHourRainInfo = weatherItems.find(
+      (item) => item.fcstTime === nextHourTime && item.category === "PCP"
     );
+
+    // 1시간 뒤 강수량이 없으면 그 이후 시간을 찾기
+    if (!oneHourRainInfo) {
+      // 현재 시간 이후의 모든 강수량 예측 데이터를 필터링
+      const futureRainInfos = weatherItems
+        .filter(
+          (item) => item.fcstTime > nextHourTime && item.category === "PCP"
+        )
+        .sort((a, b) => a.fcstTime - b.fcstTime); // 시간순으로 정렬
+
+      // 가장 가까운 이후 시간대의 데이터를 선택
+      oneHourRainInfo = futureRainInfos.length > 0 ? futureRainInfos[0] : null;
+    }
+
     const oneHourRainValue = oneHourRainInfo
       ? oneHourRainInfo.fcstValue
       : "N/A"; // 한 시간 뒤 강수량
