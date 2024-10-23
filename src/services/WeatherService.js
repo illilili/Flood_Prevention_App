@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// 인코딩된 API 키 사용
 const API_KEY =
-  "3U2Vinr+RnlR6KVJFlE5duBEM1IWvJIE+4Px6aUXNdGJNoxSv14X+Rrw5MBq4/8EKqLhR1IT9PYrppCdeCsz/Q=="; // 기상청 API 키
+  "3U2Vinr%2BRnlR6KVJFlE5duBEM1IWvJIE%2B4Px6aUXNdGJNoxSv14X%2BRrw5MBq4%2F8EKqLhR1IT9PYrppCdeCsz%2FQ%3D%3Ds";
 const API_URL =
   "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
 
@@ -10,34 +11,30 @@ export const getWeatherData = async (latitude, longitude) => {
     const nx = convertToGridX(latitude); // 위도를 격자 X 좌표로 변환
     const ny = convertToGridY(longitude); // 경도를 격자 Y 좌표로 변환
 
-    const response = await axios.get(API_URL, {
-      params: {
-        serviceKey: API_KEY, // API 키
-        numOfRows: 10, // 페이지당 결과 수
-        pageNo: 1, // 페이지 번호
-        base_date: getTodayDate(), // 오늘 날짜
-        base_time: getCurrentTime(), // 현재 시각 (정시 기준)
-        nx, // 격자 X 좌표
-        ny, // 격자 Y 좌표
-        dataType: "JSON", // 응답 형식
-      },
-    });
+    // API URL에 파라미터 직접 포함
+    const requestUrl = `${API_URL}?serviceKey=${API_KEY}&numOfRows=10&pageNo=1&base_date=${getTodayDate()}&base_time=${getCurrentTime()}&nx=${nx}&ny=${ny}&dataType=JSON`;
+
+    const response = await axios.get(requestUrl);
 
     // 응답 데이터 콘솔에 출력
-    console.log("API 응답 데이터:", response.data);
+    console.log("API 응답 전체 데이터:", response.data);
 
     // 응답 데이터의 구조 확인
-    if (
-      !response.data ||
-      !response.data.response ||
-      !response.data.response.body
-    ) {
-      console.error("API 응답 오류:", response.data);
-      return null; // 데이터가 없을 경우 null 반환
+    if (!response.data || !response.data.response) {
+      console.error("응답 데이터에서 'response'가 없습니다:", response.data);
+      return null;
     }
 
-    // 응답 데이터 처리
-    const weatherItems = response.data.response.body.items.item;
+    const body = response.data.response.body;
+    if (!body || !body.items) {
+      console.error(
+        "응답 데이터에서 'body' 또는 'items'가 없습니다:",
+        response.data.response
+      );
+      return null;
+    }
+
+    const weatherItems = body.items.item;
 
     // 현재 강수량 정보 추출
     const currentRainInfo = weatherItems.find(
@@ -45,26 +42,26 @@ export const getWeatherData = async (latitude, longitude) => {
     );
     const currentRainValue = currentRainInfo
       ? currentRainInfo.fcstValue
-      : "N/A"; // 현재 강수량
+      : "강수없음";
 
     // 한 시간 뒤 강수량 정보 추출
-    const nextHour = new Date(); // 현재 시간 가져오기
-    nextHour.setHours(nextHour.getHours() + 1); // 한 시간 뒤로 설정
-    const nextHourTime = ("0" + nextHour.getHours()).slice(-2) + "00"; // HH00 형식으로 변환
+    const nextHour = new Date();
+    nextHour.setHours(nextHour.getHours() + 1);
+    const nextHourTime = ("0" + nextHour.getHours()).slice(-2) + "00";
 
     const oneHourRainInfo = weatherItems.find(
-      (item) => item.fcstTime === nextHourTime
+      (item) => item.fcstTime === nextHourTime && item.category === "PCP"
     );
     const oneHourRainValue = oneHourRainInfo
       ? oneHourRainInfo.fcstValue
-      : "N/A"; // 한 시간 뒤 강수량
+      : "강수없음";
 
     return {
-      currentRain: currentRainValue, // 현재 강수량
-      oneHourRain: oneHourRainValue, // 한 시간 뒤 강수량
+      currentRain: currentRainValue,
+      oneHourRain: oneHourRainValue,
     };
   } catch (error) {
-    console.error("Error fetching weather data:", error);
+    console.error("API 요청 오류:", error);
     return null;
   }
 };
@@ -82,16 +79,14 @@ function getTodayDate() {
 function getCurrentTime() {
   const now = new Date();
   const hours = ("0" + now.getHours()).slice(-2);
-  return `${hours}00`; // 정시 기준으로 반환
+  return `${hours}00`;
 }
 
 // 위도, 경도를 기상청 격자 좌표로 변환하는 함수
 function convertToGridX(lat) {
-  // 기상청의 공식 격자 변환 로직을 사용해야 합니다.
-  return Math.round((lat - 30.0) * 24.0); // 대략적인 변환 로직
+  return Math.round((lat - 30.0) * 24.0);
 }
 
 function convertToGridY(lon) {
-  // 기상청의 공식 격자 변환 로직을 사용해야 합니다.
-  return Math.round((lon - 126.0) * 24.0); // 대략적인 변환 로직
+  return Math.round((lon - 126.0) * 24.0);
 }
