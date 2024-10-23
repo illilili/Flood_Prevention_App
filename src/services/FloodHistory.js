@@ -1,35 +1,27 @@
-import TileLayer from "ol/layer/Tile";
-import TileWMS from "ol/source/TileWMS";
+export async function checkFloodHistory(lat, lng) {
+  const bbox = `${lng},${lat},${lng + 0.01},${lat + 0.01}`; // BBOX 좌표 설정
 
-// 침수 이력도 레이어를 추가하는 함수
-export function addFloodLayer(map) {
-  // 현재 뷰의 범위로 BBOX 값 설정
-  const size = map.getSize();
-  const bbox = map.getView().calculateExtent(size); // 지도의 현재 범위 계산
-  const width = size[0]; // 지도의 너비
-  const height = size[1]; // 지도의 높이
+  // 프록시 서버를 통해 Safemap API 요청을 중계
+  const proxyUrl = `http://localhost:3000/safemap?query=SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&FORMAT=image/png&LAYERS=A2SM_FLUDMARKS&INFO_FORMAT=application/json&BBOX=${bbox}&CRS=EPSG:4326&WIDTH=101&HEIGHT=101&I=50&J=50&apikey=89B1UZBS-89B1-89B1-89B1-89B1UZBSFR`;
 
-  const floodLayer = new TileLayer({
-    source: new TileWMS({
-      url: "/safemap/apis.do", // WMS 서비스 URL
-      params: {
-        REQUEST: "GetMap",
-        SERVICE: "WMS",
-        VERSION: "1.3.0",
-        FORMAT: "image/png",
-        TRANSPARENT: true,
-        LAYERS: "A2SM_FLUDMARKS", // 침수 이력도 레이어 이름
-        BBOX: bbox.join(","), // BBOX 값 설정
-        WIDTH: width, // 지도의 너비
-        HEIGHT: height, // 지도의 높이
-        CRS: "EPSG:3857", // 좌표계 설정 (WGS84 Web Mercator)
-        apikey: "89B1UZBS-89B1-89B1-89B1-89B1UZBSFR", // API 키
-      },
-      serverType: "geoserver", // WMS 서버 유형
-      crossOrigin: "anonymous", // CORS 해결
-    }),
-  });
+  try {
+    const response = await fetch(proxyUrl);
 
-  // 지도에 침수 이력도 레이어 추가
-  map.addLayer(floodLayer);
+    // 응답이 HTML인지 확인
+    const responseText = await response.text();
+
+    // HTML 오류 메시지 확인
+    if (responseText.includes("alert('키 값이 맞지 않습니다.')")) {
+      throw new Error("API 키가 유효하지 않습니다.");
+    }
+
+    // JSON 파싱 시도
+    const data = JSON.parse(responseText);
+
+    // 침수 이력이 있는지 확인
+    return data.features && data.features.length > 0;
+  } catch (error) {
+    console.error("Error fetching flood history data:", error);
+    return false;
+  }
 }

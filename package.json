@@ -10,7 +10,9 @@
   "dependencies": {
     "axios": "^1.7.7",
     "core-js": "^3.8.3",
+    "express": "^4.21.1",
     "ol": "^10.2.1",
+    "request": "^2.88.2",
     "vue": "^3.2.13"
   },
   "devDependencies": {
@@ -41,5 +43,10 @@
     "last 2 versions",
     "not dead",
     "not ie 11"
-  ]
+  ],
+  "description": "```\r npm install\r ```",
+  "main": "babel.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
