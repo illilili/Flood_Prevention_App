@@ -14,6 +14,7 @@
       </p>
       <p v-if="loading">정보를 가져오는 중...</p>
       <p v-if="error" class="error">{{ error }}</p>
+      <button v-if="error" @click="fetchWeatherData">재시도</button>
     </div>
   </div>
 </template>
@@ -60,23 +61,26 @@ export default {
         alert("주차 위치가 등록되었습니다!"); // 등록 완료 메시지
 
         // 강우 정보 요청
-        this.loading = true; // 로딩 시작
-        this.error = null; // 오류 초기화
-        this.weatherData = await getWeatherData(
-          this.selectedLocation.lat,
-          this.selectedLocation.lng
-        );
-
-        // 오류 처리
-        if (!this.weatherData) {
-          this.error = "기상 정보를 가져오는 데 실패했습니다.";
-        }
-        console.log("기상 데이터:", this.weatherData); // 기상 데이터 콘솔에 출력
-        this.loading = false; // 로딩 종료
+        await this.fetchWeatherData();
       }
     });
   },
   methods: {
+    async fetchWeatherData() {
+      this.loading = true; // 로딩 시작
+      this.error = null; // 오류 초기화
+      this.weatherData = await getWeatherData(
+        this.selectedLocation.lat,
+        this.selectedLocation.lng
+      );
+
+      // 오류 처리
+      if (!this.weatherData) {
+        this.error = "기상 정보를 가져오는 데 실패했습니다.";
+      }
+      console.log("기상 데이터:", this.weatherData); // 기상 데이터 콘솔에 출력
+      this.loading = false; // 로딩 종료
+    },
     addMarker(lat, lng) {
       // 이전 마커가 존재하면 삭제
       if (this.marker) {
@@ -121,5 +125,8 @@ export default {
 }
 .error {
   color: red; /* 오류 메시지 색상 */
+}
+.loading {
+  color: blue; /* 로딩 메시지 색상 */
 }
 </style>
