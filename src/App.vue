@@ -33,50 +33,83 @@ export default {
     };
   },
   mounted() {
-    var mapContainer = document.getElementById("map"); // 지도를 표시할 div
-    var mapOption = {
-      center: new kakao.maps.LatLng(36.35144, 127.38459), // 대전 시청 좌표
-      level: 3, // 확대 수준
-    };
+    // 브라우저에서 현재 위치를 가져오기
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
 
-    this.map = new kakao.maps.Map(mapContainer, mapOption); // 카카오 맵 생성
+          // 지도를 현재 위치로 설정
+          this.initializeMap(lat, lng);
 
-    // 클릭 이벤트 추가
-    kakao.maps.event.addListener(this.map, "click", async (mouseEvent) => {
-      var latlng = mouseEvent.latLng; // 클릭한 위치의 좌표를 가져옵니다.
-      const lat = latlng.getLat(); // 위도
-      const lng = latlng.getLng(); // 경도
-
-      // 주차 위치 등록 확인 창
-      const isConfirmed = confirm(
-        `주차 위치를 등록하시겠습니까?\n위도: ${lat}\n경도: ${lng}`
-      );
-      if (isConfirmed) {
-        this.selectedLocation = {
-          lat: lat, // 선택된 위도 저장
-          lng: lng, // 선택된 경도 저장
-        };
-        this.addMarker(lat, lng); // 마커 추가
-        alert("주차 위치가 등록되었습니다!"); // 등록 완료 메시지
-
-        // 강우 정보 요청
-        this.loading = true; // 로딩 시작
-        this.error = null; // 오류 초기화
-        this.weatherData = await getWeatherData(
-          this.selectedLocation.lat,
-          this.selectedLocation.lng
-        );
-
-        // 오류 처리
-        if (!this.weatherData) {
-          this.error = "기상 정보를 가져오는 데 실패했습니다.";
+          // 선택된 위치를 현재 위치로 설정
+          this.selectedLocation = {
+            lat: lat,
+            lng: lng,
+          };
+        },
+        (error) => {
+          console.error("Error getting current position:", error);
+          // 기본 위치로 대전 시청을 사용 (사용자의 위치를 못 가져왔을 경우)
+          const defaultLat = 36.35144;
+          const defaultLng = 127.38459;
+          this.initializeMap(defaultLat, defaultLng);
+        },
+        {
+          enableHighAccuracy: true, // 고정밀도 위치 추적 활성화
+          timeout: 5000, // 위치를 가져오는 시간 제한 (5초)
+          maximumAge: 0, // 캐시된 위치 사용 금지
         }
-        console.log("기상 데이터:", this.weatherData); // 기상 데이터 콘솔에 출력
-        this.loading = false; // 로딩 종료
-      }
-    });
+      );
+    } else {
+      alert("Geolocation을 지원하지 않는 브라우저입니다.");
+      // 기본 위치로 대전 시청 설정
+      const defaultLat = 36.35144;
+      const defaultLng = 127.38459;
+      this.initializeMap(defaultLat, defaultLng);
+    }
   },
   methods: {
+    initializeMap(lat, lng) {
+      var mapContainer = document.getElementById("map"); // 지도를 표시할 div
+      var mapOption = {
+        center: new kakao.maps.LatLng(lat, lng), // 현재 위치 좌표로 설정
+        level: 3, // 확대 수준
+      };
+
+      this.map = new kakao.maps.Map(mapContainer, mapOption); // 카카오 맵 생성
+
+      // 지도 클릭 이벤트 추가
+      kakao.maps.event.addListener(this.map, "click", async (mouseEvent) => {
+        const latlng = mouseEvent.latLng; // 클릭한 위치의 좌표를 가져옵니다.
+        const lat = latlng.getLat(); // 위도
+        const lng = latlng.getLng(); // 경도
+
+        const isConfirmed = confirm(
+          `주차 위치를 등록하시겠습니까?\n위도: ${lat}\n경도: ${lng}`
+        );
+        if (isConfirmed) {
+          this.selectedLocation = {
+            lat: lat, // 선택된 위도 저장
+            lng: lng, // 선택된 경도 저장
+          };
+          this.addMarker(lat, lng); // 마커 추가
+          alert("주차 위치가 등록되었습니다!");
+
+          // 강우 정보 요청
+          this.loading = true; // 로딩 시작
+          this.error = null; // 오류 초기화
+          this.weatherData = await getWeatherData(lat, lng);
+
+          if (!this.weatherData) {
+            this.error = "기상 정보를 가져오는 데 실패했습니다.";
+          }
+          console.log("기상 데이터:", this.weatherData); // 기상 데이터 콘솔에 출력
+          this.loading = false; // 로딩 종료
+        }
+      });
+    },
     addMarker(lat, lng) {
       // 이전 마커가 존재하면 삭제
       if (this.marker) {
@@ -85,7 +118,7 @@ export default {
 
       // 마커 아이콘 생성
       const markerImage = new kakao.maps.MarkerImage(
-        "/images/front-car.png", // 업로드한 차 아이콘 경로
+        "/images/front-car.png", // 차 아이콘 경로
         new kakao.maps.Size(40, 40), // 아이콘 크기
         {
           offset: new kakao.maps.Point(20, 20), // 아이콘의 중앙을 기준으로 설정
