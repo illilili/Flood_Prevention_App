@@ -34,7 +34,7 @@ export default {
     };
   },
   mounted() {
-    // 브라우저에서 현재 위치를 가져오기
+    // 현재 위치 가져오기
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
