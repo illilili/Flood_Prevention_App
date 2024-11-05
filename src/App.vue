@@ -1,4 +1,3 @@
-// App.vue
 <template>
   <div id="app">
     <header class="app-header">
@@ -23,6 +22,7 @@
 import MapComponent from "./components/MapComponent.vue";
 import { getWeatherData } from "./services/WeatherService";
 import { checkFloodHistory } from "./services/FloodHistoryService";
+import { assessRisk } from "./services/RiskAssessmentService";
 
 export default {
   components: {
@@ -36,36 +36,50 @@ export default {
       error: null,
     };
   },
+
   methods: {
     async handleLocationSelect(lat, lng) {
-      console.log("Location selected:", lat, lng); // 위치 확인용 로그
+      console.log("Location selected:", lat, lng);
       this.selectedLocation = { lat, lng };
       this.loading = true;
       this.error = null;
 
-      // 날씨 정보 가져오기
       try {
+        console.log("Fetching weather data...");
         this.weatherData = await getWeatherData(lat, lng);
-        console.log("Weather data:", this.weatherData); // 날씨 데이터 확인 로그
-      } catch (error) {
-        this.error = "기상 정보를 가져오는 데 실패했습니다.";
-      }
+        console.log("Weather data received:", this.weatherData);
 
-      // 침수 이력 확인
-      const [x, y] = this.latLngToEPSG3857(lat, lng);
-      try {
+        const currentRainfall =
+          this.weatherData && this.weatherData.currentRain !== "N/A"
+            ? this.weatherData.currentRain
+            : "강수없음";
+        const oneHourRainfall =
+          this.weatherData && this.weatherData.oneHourRain !== "N/A"
+            ? this.weatherData.oneHourRain
+            : "강수없음";
+
+        const [x, y] = this.latLngToEPSG3857(lat, lng);
         const floodData = await checkFloodHistory(x, y);
-        console.log("Flood history data:", floodData); // 침수 이력 확인 로그
+        console.log("Flood history data:", floodData);
+
         if (floodData) {
           alert("이 위치는 침수 이력이 있는 지역입니다.");
         } else {
           alert("이 위치는 침수 이력이 없는 지역입니다.");
         }
-      } catch (error) {
-        this.error = "침수 이력 정보를 가져오는 데 실패했습니다.";
-      }
 
-      this.loading = false;
+        const riskMessage = assessRisk(
+          currentRainfall,
+          oneHourRainfall,
+          floodData
+        );
+        alert(riskMessage);
+      } catch (error) {
+        this.error = "정보를 가져오는 중 오류가 발생했습니다.";
+        console.error("Error fetching data:", error);
+      } finally {
+        this.loading = false;
+      }
     },
 
     latLngToEPSG3857(lat, lng) {
