@@ -45,7 +45,6 @@ export default {
       this.error = null;
 
       try {
-        console.log("Fetching weather data...");
         this.weatherData = await getWeatherData(lat, lng);
         console.log("Weather data received:", this.weatherData);
 
@@ -68,10 +67,12 @@ export default {
           alert("이 위치는 침수 이력이 없는 지역입니다.");
         }
 
-        const riskMessage = assessRisk(
+        // 위험 수준 평가 및 결과 메시지 표시
+        const riskMessage = await assessRisk(
           currentRainfall,
           oneHourRainfall,
-          floodData
+          lat,
+          lng
         );
         alert(riskMessage);
       } catch (error) {

@@ -27,7 +27,6 @@ function getClosestBaseTime() {
       closestBaseTime = baseTimes[i];
     }
   }
-  console.log("Calculated baseTime:", closestBaseTime); // baseTime 확인용 로그
   return closestBaseTime;
 }
 
@@ -43,7 +42,6 @@ function getTodayDate() {
 // 날씨 데이터를 가져오는 함수
 export const getWeatherData = async (latitude, longitude) => {
   try {
-    console.log("getWeatherData called"); // 함수 호출 확인 로그
     const nx = convertToGridX(latitude);
     const ny = convertToGridY(longitude);
     const baseDate = getTodayDate();
@@ -52,7 +50,6 @@ export const getWeatherData = async (latitude, longitude) => {
     console.log(
       `Requesting data with baseDate: ${baseDate} and baseTime: ${baseTime}`
     );
-    console.log(`Grid coordinates: nx=${nx}, ny=${ny}`);
 
     const response = await axios.get(API_URL, {
       params: {
@@ -80,7 +77,6 @@ export const getWeatherData = async (latitude, longitude) => {
     }
 
     const weatherItems = responseData.response.body.items.item;
-    console.log("Weather items:", weatherItems);
 
     // 강수량 정보 추출 (현재 시각과 한 시간 뒤)
     const currentRain =
@@ -93,8 +89,6 @@ export const getWeatherData = async (latitude, longitude) => {
           item.fcstTime === String(Number(baseTime) + 100) &&
           item.category === "PCP"
       )?.fcstValue || "강수없음";
-
-    console.log("Current rain:", currentRain, "One hour rain:", oneHourRain);
 
     return {
       currentRain,
