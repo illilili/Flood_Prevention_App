@@ -1,8 +1,10 @@
 <template>
   <div id="app">
-    <header class="app-header" style="padding: 10px; display: flex; align-items: center; justify-content: flex-start;">
-      <img src="@/assets/floodguard-logo.png" alt="Flood Guard Logo" style="width: 200px; height: auto; margin-left: 10px;" />
-</header>
+    <img
+      src="@/assets/floodguard-logo.png"
+      alt="Flood Guard Logo"
+      class="logo"
+    />
 
     <MapComponent :locationSelect="handleLocationSelect" />
     <div v-if="selectedLocation" class="location-info">
@@ -51,6 +53,7 @@ export default {
       weatherData: null,
       loading: false,
       error: null,
+      parkingStatus: {}, // 주차 상태, 메시지 없이 이미지만 처리
     };
   },
   methods: {
@@ -117,10 +120,21 @@ export default {
 </script>
 
 <style scoped>
+/* 로고 스타일: 화면 왼쪽 상단에 고정 위치 */
+.logo {
+  position: fixed; /* 고정 위치 */
+  top: 10px; /* 화면 상단에서 10px 떨어짐 */
+  left: 10px; /* 화면 왼쪽에서 10px 떨어짐 */
+  width: 150px; /* 로고 크기 조정 */
+  height: auto;
+  z-index: 1000; /* 다른 요소 위에 표시되도록 설정 */
+}
+
 .map {
   width: 100vw;
   height: 100vh;
 }
+
 .location-info {
   position: absolute;
   bottom: 20px;
@@ -130,9 +144,11 @@ export default {
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
+
 .error {
   color: red;
 }
+
 .app-header {
   width: 100%;
 }
