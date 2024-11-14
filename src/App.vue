@@ -1,8 +1,9 @@
 <template>
   <div id="app">
-    <header class="app-header">
-      <h3>Flood Prevention</h3>
-    </header>
+    <header class="app-header" style="padding: 10px; display: flex; align-items: center; justify-content: flex-start;">
+      <img src="@/assets/floodguard-logo.png" alt="Flood Guard Logo" style="width: 200px; height: auto; margin-left: 10px;" />
+</header>
+
     <MapComponent :locationSelect="handleLocationSelect" />
     <div v-if="selectedLocation" class="location-info">
       <p>선택한 위치:</p>
@@ -15,6 +16,22 @@
       <p v-if="loading">정보를 가져오는 중...</p>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
+  
+     <!-- 왼쪽 하단 주차 등록 버튼 -->
+     <button
+      @click="registerParking"
+      style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; width: 160px; height: 60px; font-size: 16px; border-radius: 12px; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer;"
+      >
+      주차 등록
+    </button>
+
+    <!-- 오른쪽 하단 현재 위치 위험도 확인 버튼 -->
+    <button
+      @click="checkRiskLevel"
+      style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 160px; height: 60px; font-size: 16px; border-radius: 12px; padding: 10px; background-color: #FF0000; color: white; border: none; cursor: pointer;"
+      >
+      현재 위치 위험도 확인
+    </button>
   </div>
 </template>
 
@@ -36,8 +53,15 @@ export default {
       error: null,
     };
   },
-
   methods: {
+    registerParking() {
+      // 주차 등록 기능
+      console.log("주차 등록 버튼 클릭됨");
+    },
+    checkRiskLevel() {
+      // 현재 위치 위험도 확인 기능
+      console.log("현재 위치 위험도 확인 버튼 클릭됨");
+    },
     async handleLocationSelect(lat, lng) {
       console.log("Location selected:", lat, lng);
       this.selectedLocation = { lat, lng };
@@ -81,7 +105,6 @@ export default {
         this.loading = false;
       }
     },
-
     latLngToEPSG3857(lat, lng) {
       const x = (lng * 20037508.34) / 180;
       const y =
@@ -109,5 +132,8 @@ export default {
 }
 .error {
   color: red;
+}
+.app-header {
+  width: 100%;
 }
 </style>
