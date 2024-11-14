@@ -32,6 +32,16 @@
       @click="checkRiskLevel"
       style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 200px; height: 220px; cursor: pointer;"
     />
+
+    <!-- 주차 완료 메시지 -->
+    <div v-if="showParkingMessage" class="parking-message">
+      <p>주차 완료</p>
+    </div>
+
+    <!-- 위험 아이콘 -->
+    <div v-if="showRiskIcon" class="risk-icon">
+      <img :src="riskIcon" alt="위험 아이콘" />
+    </div>
   </div>
 </template>
 
@@ -51,18 +61,41 @@ export default {
       weatherData: null,
       loading: false,
       error: null,
-      parkingStatus: {}, // 주차 상태, 메시지 없이 이미지만 처리
+      showParkingMessage: false, 
+      showRiskIcon: false, 
+      riskIcon: "", 
     };
   },
+
   methods: {
     registerParking() {
-      // 주차 등록 기능
-      console.log("주차 등록 버튼 클릭됨");
+      this.showParkingMessage = true;
+      setTimeout(() => {
+        this.showParkingMessage = false;
+      }, 2000); 
     },
-    checkRiskLevel() {
-      // 현재 위치 위험도 확인 기능
-      console.log("현재 위치 위험도 확인 버튼 클릭됨");
+
+    async checkRiskLevel() {
+      // 위험도 확인 기능
+      console.log("위험도 확인 버튼 클릭됨");
+      // 위험 지역 판별을 위한 가상의 조건
+      const floodRiskLevel = Math.floor(Math.random() * 3); // 0, 1, 2 중 랜덤 값
+
+    // floodRiskLevel에 따라 다르게 이미지 설정
+    if (floodRiskLevel === 2) {
+      this.riskIcon = require('@/assets/warning-icon.png'); // 경고 아이콘
+      } else if (floodRiskLevel === 1) {
+      this.riskIcon = require('@/assets/danger-icon.png'); // 위험 아이콘
+      } else {
+        this.riskIcon = require('@/assets/safe-icon.png'); // 안전 지역 아이콘
+      }
+      this.showRiskIcon = true; 
+
+      setTimeout(() => {
+        this.showRiskIcon = false; // 2초 뒤 아이콘 제거
+      }, 2000); 
     },
+
     async handleLocationSelect(lat, lng) {
       console.log("Location selected:", lat, lng);
       this.selectedLocation = { lat, lng };
@@ -141,6 +174,30 @@ export default {
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.parking-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 정확히 중앙에 배치 */
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  font-size: 20px;
+}
+
+.risk-icon {
+  position: fixed;
+  top: 50%;    /* 화면의 세로 중앙 */
+  left: 50%;   /* 화면의 가로 중앙 */
+  transform: translate(-50%, -50%); /* 정확한 중앙 정렬 */
+  z-index: 1001;  /* 다른 요소보다 위에 보이도록 설정 */
+  width: 100px;   /* 위험 아이콘 크기 */
+  height: 100px;
 }
 
 .error {
