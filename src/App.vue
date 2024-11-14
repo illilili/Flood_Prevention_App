@@ -19,21 +19,19 @@
       <p v-if="error" class="error">{{ error }}</p>
     </div>
   
-     <!-- 왼쪽 하단 주차 등록 버튼 -->
-     <button
+    <img
+      src="@/assets/parking-register-icon.png"
+      alt="주차 등록"
       @click="registerParking"
-      style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; width: 160px; height: 60px; font-size: 16px; border-radius: 12px; padding: 10px; background-color: #4CAF50; color: white; border: none; cursor: pointer;"
-      >
-      주차 등록
-    </button>
+      style="position: fixed; bottom: 20px; left: 20px; z-index: 1000; width: 200px; height: 220px; cursor: pointer;"
+    />
 
-    <!-- 오른쪽 하단 현재 위치 위험도 확인 버튼 -->
-    <button
+    <img
+      src="@/assets/risk-check-icon.png"
+      alt="위험도 확인"
       @click="checkRiskLevel"
-      style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 160px; height: 60px; font-size: 16px; border-radius: 12px; padding: 10px; background-color: #FF0000; color: white; border: none; cursor: pointer;"
-      >
-      현재 위치 위험도 확인
-    </button>
+      style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; width: 200px; height: 220px; cursor: pointer;"
+    />
   </div>
 </template>
 
