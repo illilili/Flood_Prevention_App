@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import { addMarker } from "@/services/MapService.js"; // 대소문자 정확히 맞추기
+
 /* global kakao */
 export default {
   name: "MapComponent",
@@ -15,7 +17,6 @@ export default {
   data() {
     return {
       map: null,
-      marker: null, // 마커를 저장할 변수 추가
     };
   },
   mounted() {
@@ -39,34 +40,9 @@ export default {
         const lng = latlng.getLng();
 
         this.locationSelect(lat, lng); // 부모 컴포넌트로 위치 전송
-        this.addMarker(lat, lng); // 마커 추가
+        addMarker(this.map, lat, lng); // 마커 추가
       });
     });
-  },
-  methods: {
-    addMarker(lat, lng) {
-      // 이전 마커가 존재하면 삭제
-      if (this.marker) {
-        this.marker.setMap(null);
-      }
-
-      // 마커 아이콘 설정
-      const markerImage = new kakao.maps.MarkerImage(
-        "/images/car.png", // 마커 이미지 경로
-        new kakao.maps.Size(80, 80),
-        {
-          offset: new kakao.maps.Point(20, 20),
-        }
-      );
-
-      // 마커 생성 및 지도에 추가
-      this.marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(lat, lng),
-        image: markerImage,
-      });
-
-      this.marker.setMap(this.map); // 지도에 마커 설정
-    },
   },
 };
 </script>

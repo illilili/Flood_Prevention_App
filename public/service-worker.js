@@ -1,7 +1,6 @@
-/* eslint-disable */
 self.addEventListener("install", (event) => {
   console.log("Service Worker installed.");
-  self.skipWaiting();
+  self.skipWaiting(); // 설치 즉시 활성화
 });
 
 self.addEventListener("activate", (event) => {
@@ -13,10 +12,12 @@ self.addEventListener("periodicsync", async (event) => {
     console.log("Periodic sync event received: risk-alert");
 
     try {
+      // 1. API로 날씨 데이터 가져오기
       const weatherResponse = await fetch("/api/weather-data");
       const weatherData = await weatherResponse.json();
       const { currentRain, oneHourRain } = weatherData;
 
+      // 2. 위험 평가 API 호출
       const riskResponse = await fetch("/api/assess-risk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -24,6 +25,7 @@ self.addEventListener("periodicsync", async (event) => {
       });
       const risk = await riskResponse.json();
 
+      // 3. 위험 수준에 따라 알림 표시
       if (risk.floodRiskLevel > 0) {
         self.registration.showNotification("침수 위험 경고", {
           body: risk.alertMessage,

@@ -62,9 +62,9 @@
 </template>
 
 <script>
+import axios from "axios";
 import MapComponent from "./components/MapComponent.vue";
 import { getWeatherData } from "./services/WeatherService";
-import { checkFloodHistory } from "./services/FloodHistoryService";
 import { assessRisk } from "./services/RiskAssessmentService";
 import { getOrCreateUUID } from "@/utils/uuid";
 
@@ -74,144 +74,136 @@ export default {
   },
   data() {
     return {
-      userUUID: null,
+      userUUID: getOrCreateUUID(),
       selectedLocation: null,
       weatherData: null,
       loading: false,
       error: null,
-      monitorInterval: null, // 모니터링 타이머
+      monitorInterval: null,
       riskIcon: null,
-      showRiskIcon: false, // 위험 아이콘 표시 여부
+      showRiskIcon: false,
       showParkingMessage: false,
     };
   },
-
-  created() {
-    this.userUUID = getOrCreateUUID();
-    console.log("User UUID:", this.userUUID); // 서버와 통신 시 사용
-  },
-
   methods: {
-    registerParking() {
-      this.showParkingMessage = true;
-      setTimeout(() => {
-        this.showParkingMessage = false;
-      }, 2000);
+    handleLocationSelect(lat, lng) {
+      this.selectedLocation = { lat, lng };
+      console.log("Location selected:", this.selectedLocation);
+    },
+
+    async registerParking() {
+      if (!this.selectedLocation) {
+        alert("위치를 선택해주세요.");
+        return;
+      }
+
+      const { lat, lng } = this.selectedLocation;
+
+      try {
+        // 주차 위치 등록 API 호출
+        const response = await axios.post("/api/registerParking", {
+          lat,
+          lon: lng,
+        });
+
+        console.log("Parking location registered:", response.data);
+
+        // 서버에서 응답받은 데이터를 로컬에 저장
+        const parkingData = response.data.parkingData;
+        localStorage.setItem("parkingData", JSON.stringify(parkingData));
+
+        alert("주차 위치가 등록되었습니다.");
+      } catch (error) {
+        console.error("Error registering parking location:", error);
+        alert("주차 위치 등록 중 오류가 발생했습니다.");
+      }
     },
 
     async checkRiskLevel() {
-      // 위험도 확인 버튼 클릭 시 실행
-      console.log("위험도 확인 버튼 클릭됨");
-      if (this.selectedLocation) {
-        const { lat, lng } = this.selectedLocation;
-
-        // 위험도 평가
-        await this.checkAndAlert(lat, lng);
-      } else {
-        alert("위치가 선택되지 않았습니다.");
+      const parkingData = JSON.parse(localStorage.getItem("parkingData"));
+      if (!parkingData) {
+        alert("주차 위치를 등록한 후에 위험도를 확인할 수 있습니다.");
+        return;
       }
-    },
 
-    async handleLocationSelect(lat, lng) {
-      console.log("Location selected:", lat, lng);
-      this.selectedLocation = { lat, lng };
-      this.loading = true;
-      this.error = null;
-
-      // 기존 모니터링을 해제하고 새로 설정
-      if (this.monitorInterval) {
-        clearInterval(this.monitorInterval);
-        this.monitorInterval = null;
-      }
+      const { lat, lng, depth_10, depth_20, depth_50, floodHistory } =
+        parkingData;
 
       try {
-        await this.checkAndAlert(lat, lng);
-
-        // 1시간마다 강수 정보를 새로 요청하여 위험 모니터링
-        this.monitorInterval = setInterval(async () => {
-          await this.checkAndAlert(lat, lng, true);
-        }, 3600000); // 1시간 = 3600000 밀리초
-      } catch (error) {
-        this.error = "정보를 가져오는 중 오류가 발생했습니다.";
-        console.error("Error fetching data:", error);
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async checkAndAlert(lat, lng, isPeriodic = false) {
-      try {
-        this.weatherData = await getWeatherData(lat, lng);
-        console.log("Weather data received:", this.weatherData);
-
-        const currentRainfall =
-          this.weatherData && this.weatherData.currentRain !== "N/A"
-            ? this.weatherData.currentRain
-            : "강수없음";
-        const oneHourRainfall =
-          this.weatherData && this.weatherData.oneHourRain !== "N/A"
-            ? this.weatherData.oneHourRain
-            : "강수없음";
-
-        const [x, y] = this.latLngToEPSG3857(lat, lng);
-        const floodData = await checkFloodHistory(x, y);
-        console.log("Flood history data:", floodData);
-
-        // 주차 위치의 첫 번째 알림
-        if (!isPeriodic) {
-          if (floodData) {
-            alert("이 위치는 침수 이력이 있습니다.");
-          } else {
-            alert("이 위치는 침수 이력이 없습니다.");
-          }
-        }
-
-        // 위험 수준 평가 및 알림
-        const riskMessage = await assessRisk(
-          currentRainfall,
-          oneHourRainfall,
+        const weatherData = await getWeatherData(lat, lng);
+        // eslint-disable-next-line no-unused-vars
+        const { floodRiskLevel, alertMessage, riskIcon } = await assessRisk(
+          weatherData.currentRain,
+          weatherData.oneHourRain,
           lat,
-          lng
+          lng,
+          depth_10,
+          depth_20,
+          depth_50,
+          floodHistory
         );
 
-        // 주기적 검사에서 위험 감지 시 알림
-        if (
-          isPeriodic &&
-          riskMessage !== "현재 위치의 침수 위험도는 안전합니다."
-        ) {
-          alert(riskMessage);
-        }
+        console.log(`Flood Risk Level: ${floodRiskLevel}`); // floodRiskLevel 사용 명시
 
-        // 위험도 아이콘 업데이트
-        if (riskMessage.includes("위험")) {
-          this.riskIcon = require("@/assets/danger-icon.png"); // 위험 아이콘
-        } else if (riskMessage.includes("경고")) {
-          this.riskIcon = require("@/assets/warning-icon.png"); // 경고 아이콘
-        } else {
-          this.riskIcon = require("@/assets/safe-icon.png"); // 안전 지역 아이콘
-        }
         this.showRiskIcon = true;
+        this.riskIcon = `/assets/icons/${riskIcon}`;
+        setTimeout(() => (this.showRiskIcon = false), 2000);
 
-        // 아이콘 표시 시간 (2초 뒤 사라짐)
-        setTimeout(() => {
-          this.showRiskIcon = false;
-        }, 2000);
+        // floodRiskLevel을 화면에 표시
+        alert(alertMessage);
       } catch (error) {
-        console.error("Error checking risk:", error);
+        console.error("Error checking risk level:", error);
+        alert("위험도 확인 중 오류가 발생했습니다.");
       }
     },
 
-    latLngToEPSG3857(lat, lng) {
-      const x = (lng * 20037508.34) / 180;
-      const y =
-        Math.log(Math.tan(((90 + lat) * Math.PI) / 360)) / (Math.PI / 180);
-      const yConverted = (y * 20037508.34) / 180;
-      return [x, yConverted];
+    async startMonitoring() {
+      const updateRisk = async () => {
+        const parkingData = JSON.parse(localStorage.getItem("parkingData"));
+        if (!parkingData) {
+          console.warn("No parking data found. Monitoring stopped.");
+          clearInterval(this.monitorInterval);
+          this.monitorInterval = null;
+          return;
+        }
+
+        const { lat, lng, depth_10, depth_20, depth_50, floodHistory } =
+          parkingData;
+
+        try {
+          const weatherData = await getWeatherData(lat, lng);
+          // eslint-disable-next-line no-unused-vars
+          const { floodRiskLevel, alertMessage, riskIcon } = await assessRisk(
+            weatherData.currentRain,
+            weatherData.oneHourRain,
+            lat,
+            lng,
+            depth_10,
+            depth_20,
+            depth_50,
+            floodHistory
+          );
+
+          if (floodRiskLevel > 0) {
+            console.log(`Detected flood risk level: ${floodRiskLevel}`);
+            alert(alertMessage);
+            this.showRiskIcon = true;
+            this.riskIcon = `/assets/icons/${riskIcon}`;
+            setTimeout(() => (this.showRiskIcon = false), 2000);
+          }
+        } catch (error) {
+          console.error("Error during periodic risk update:", error);
+        }
+      };
+
+      if (this.monitorInterval) {
+        clearInterval(this.monitorInterval);
+      }
+      await updateRisk(); // 즉시 실행
+      this.monitorInterval = setInterval(updateRisk, 3600000); // 1시간마다 실행
     },
   },
-
   beforeUnmount() {
-    // 컴포넌트가 제거될 때 모니터링을 해제
     if (this.monitorInterval) {
       clearInterval(this.monitorInterval);
     }
