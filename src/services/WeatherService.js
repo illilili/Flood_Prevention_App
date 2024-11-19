@@ -78,6 +78,16 @@ export const getWeatherData = async (latitude, longitude) => {
 
     const weatherItems = responseData.response.body.items.item;
 
+    // 현재 시간에 맞는 fcstTime을 계산
+    const now = new Date();
+    const currentTime = now.getHours() * 100;
+    const currentTimeStr = String(currentTime).padStart(4, "0");
+    const oneHourLaterStr = String(currentTime + 100).padStart(4, "0");
+
+    console.log(
+      `현재 fcstTime: ${currentTimeStr}, 한 시간 후 fcstTime: ${oneHourLaterStr}`
+    );
+
     // 강수량 정보 추출 (현재 시각과 한 시간 뒤)
     const currentRain =
       weatherItems.find(

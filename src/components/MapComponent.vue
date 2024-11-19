@@ -52,8 +52,8 @@ export default {
 
       // 마커 아이콘 설정
       const markerImage = new kakao.maps.MarkerImage(
-        "/images/front-car.png", // 마커 이미지 경로
-        new kakao.maps.Size(40, 40),
+        "/images/car.png", // 마커 이미지 경로
+        new kakao.maps.Size(80, 80),
         {
           offset: new kakao.maps.Point(20, 20),
         }
