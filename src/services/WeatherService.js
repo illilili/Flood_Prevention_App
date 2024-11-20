@@ -65,7 +65,7 @@ export const getWeatherData = async (latitude, longitude) => {
     });
 
     const responseData = response.data;
-    console.log("API 응답 데이터:", responseData);
+    console.log("API Response Status:", response.status);
 
     if (
       !responseData ||
@@ -99,6 +99,12 @@ export const getWeatherData = async (latitude, longitude) => {
           item.fcstTime === String(Number(baseTime) + 100) &&
           item.category === "PCP"
       )?.fcstValue || "강수없음";
+
+    console.log(
+      `Extracted Rainfall Data: currentRain=${currentRain}, oneHourRain=${oneHourRain}`
+    );
+
+    console.log("Raw API Response:", responseData);
 
     return {
       currentRain,

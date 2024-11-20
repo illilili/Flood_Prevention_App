@@ -1,51 +1,93 @@
-/* eslint-disable */
-self.addEventListener("install", (event) => {
-  console.log("Service Worker installed.");
-  self.skipWaiting();
-});
+import axios from "axios";
 
-self.addEventListener("activate", (event) => {
-  console.log("Service Worker activated.");
-});
+// 백엔드 API 엔드포인트 설정
+const BASE_URL = "http://localhost:3000";
 
-self.addEventListener("periodicsync", async (event) => {
-  if (event.tag === "risk-alert") {
-    console.log("Periodic sync event received: risk-alert");
-
-    try {
-      const weatherResponse = await fetch("/api/weather-data");
-      const weatherData = await weatherResponse.json();
-      const { currentRain, oneHourRain } = weatherData;
-
-      const riskResponse = await fetch("/api/assess-risk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentRain, oneHourRain }),
-      });
-      const risk = await riskResponse.json();
-
-      if (risk.floodRiskLevel > 0) {
-        self.registration.showNotification("침수 위험 경고", {
-          body: risk.alertMessage,
-          icon: `/assets/icons/${risk.riskIcon}`,
-        });
-        console.log("Notification sent:", risk.alertMessage);
-      } else {
-        console.log("No flood risk detected.");
-      }
-    } catch (error) {
-      console.error("Error in periodic sync:", error);
-    }
+// 침수 유발 강우량 정보를 가져오는 함수
+async function getFloodThresholds(lat, lon) {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/getFloodThresholds`, {
+      lat,
+      lon,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error fetching flood thresholds:",
+      error.response?.data || error
+    );
+    return { depth_10: null, depth_20: null, depth_50: null };
   }
-});
+}
 
-self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || "알림";
-  const options = {
-    body: data.body || "내용 없음",
-    icon: data.icon || "/assets/icons/default-icon.png",
-  };
+// 침수 이력 확인 함수
+async function checkFloodHistory(lat, lon) {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/checkFloodHistory`, {
+      lat,
+      lon,
+    });
+    return response.data.floodHistory;
+  } catch (error) {
+    console.error(
+      "Error checking flood history:",
+      error.response?.data || error
+    );
+    return false;
+  }
+}
 
-  event.waitUntil(self.registration.showNotification(title, options));
-});
+// 위험 수준을 평가하는 함수
+export async function assessRisk(currentRainfall, oneHourRainfall, lat, lon) {
+  try {
+    // 침수 유발 강우량 정보 가져오기
+    const thresholds = await getFloodThresholds(lat, lon);
+    const floodHistory = await checkFloodHistory(lat, lon);
+
+    const { depth_10, depth_20, depth_50 } = thresholds;
+
+    console.log(
+      `Thresholds - Flood History: ${floodHistory}, 10cm: ${depth_10}, 20cm: ${depth_20}, 50cm: ${depth_50}`
+    );
+
+    // 기본값 설정
+    let floodRiskLevel = 0; // 0: 안전, 1: 경고, 2: 위험, 3: 매우 위험
+    let alertMessage = `침수 위험 레벨: <span style="color:deepskyblue;">안전</span>`;
+    let riskIcon = "safe-icon.png";
+
+    // 위험 수준 평가
+    const dangerThreshold = floodHistory ? depth_10 : depth_20;
+
+    if (currentRainfall >= depth_50 || oneHourRainfall >= depth_50) {
+      floodRiskLevel = 3;
+      alertMessage = `침수 위험 레벨: <span style="color:red;">매우 위험</span>`;
+      riskIcon = "danger-icon.png";
+    } else if (
+      currentRainfall >= dangerThreshold ||
+      oneHourRainfall >= dangerThreshold
+    ) {
+      floodRiskLevel = 2;
+      alertMessage = `침수 위험 레벨: <span style="color:red;">위험</span>`;
+      riskIcon = "danger-icon.png";
+    } else if (
+      currentRainfall >= dangerThreshold * 0.8 ||
+      oneHourRainfall >= dangerThreshold * 0.8
+    ) {
+      floodRiskLevel = 1;
+      alertMessage = `침수 위험 레벨: <span style="color:yellow;">경고</span>`;
+      riskIcon = "warning-icon.png";
+    }
+
+    console.log(
+      `[RiskAssessment] Risk Level: ${floodRiskLevel}, Message: ${alertMessage}`
+    );
+    return { floodRiskLevel, alertMessage, riskIcon };
+  } catch (error) {
+    console.error("Error assessing risk:", error);
+    return {
+      floodRiskLevel: 0,
+      alertMessage: "위험도를 평가할 수 없습니다.",
+      riskIcon: "safe-icon.png",
+    };
+  }
+}

@@ -10,6 +10,7 @@ if ("serviceWorker" in navigator) {
     .then(async (registration) => {
       console.log("Service Worker registered:", registration);
 
+      // Periodic Sync 등록 (지원되는 경우)
       if ("periodicSync" in registration) {
         try {
           const status = await navigator.permissions.query({
@@ -35,4 +36,15 @@ if ("serviceWorker" in navigator) {
     .catch((error) => {
       console.error("Service Worker registration failed:", error);
     });
+}
+
+// Notification 권한 요청
+if ("Notification" in window) {
+  Notification.requestPermission().then((permission) => {
+    if (permission === "granted") {
+      console.log("Notification permission granted.");
+    } else {
+      console.warn("Notification permission denied.");
+    }
+  });
 }

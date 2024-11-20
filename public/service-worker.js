@@ -13,16 +13,21 @@ self.addEventListener("periodicsync", async (event) => {
 
     try {
       // 1. API로 날씨 데이터 가져오기
-      const weatherResponse = await fetch("/api/weather-data");
+      const weatherResponse = await fetch(
+        "http://localhost:3000/api/weather-data"
+      ); // Proxy 사용 불가
       const weatherData = await weatherResponse.json();
       const { currentRain, oneHourRain } = weatherData;
 
       // 2. 위험 평가 API 호출
-      const riskResponse = await fetch("/api/assess-risk", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentRain, oneHourRain }),
-      });
+      const riskResponse = await fetch(
+        "http://localhost:3000/api/assess-risk",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ currentRain, oneHourRain }),
+        }
+      );
       const risk = await riskResponse.json();
 
       // 3. 위험 수준에 따라 알림 표시
